@@ -146,7 +146,16 @@ namespace arg {
         [[nodiscard]] auto lookup() const -> ::pisa::Query
         {
             std::vector<::pisa::Query> q;
-            auto parse_query = resolve_query_parser(q, tokenizer(), m_term_lexicon, m_stop_words, m_stemmer);
+//            auto parse_query = resolve_query_parser(q, tokenizer(), m_term_lexicon, m_stop_words, m_stemmer);
+//            parse_query(m_single_query);
+            std::unique_ptr<TermMap> term_map = [this]() -> std::unique_ptr<TermMap> {
+                if (this->m_term_lexicon) {
+                    return std::make_unique<LexiconMap>(*this->m_term_lexicon);
+                }
+                return std::make_unique<IntMap>();
+            }();
+            QueryParser parser(text_analyzer(), std::move(term_map));
+            auto parse_query = [&q, &parser](auto&& line) { q.push_back(parser.parse(line)); };
             parse_query(m_single_query);
             return q[0];
         }
@@ -154,7 +163,14 @@ namespace arg {
         [[nodiscard]] auto lookup(std::string input_q) const -> ::pisa::Query
         {
             std::vector<::pisa::Query> q;
-            auto parse_query = resolve_query_parser(q, tokenizer(), m_term_lexicon, m_stop_words, m_stemmer);
+            std::unique_ptr<TermMap> term_map = [this]() -> std::unique_ptr<TermMap> {
+                if (this->m_term_lexicon) {
+                    return std::make_unique<LexiconMap>(*this->m_term_lexicon);
+                }
+                return std::make_unique<IntMap>();
+            }();
+            QueryParser parser(text_analyzer(), std::move(term_map));
+            auto parse_query = [&q, &parser](auto&& input_q) { q.push_back(parser.parse(input_q)); };
             parse_query(input_q);
             return q[0];
         }
